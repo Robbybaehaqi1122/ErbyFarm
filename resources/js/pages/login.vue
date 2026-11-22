@@ -1,7 +1,7 @@
 <script setup>
 import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
 import { useAuthStore } from '@/stores/auth'
-import logo from '@images/logo.svg?raw'
+import logo from '@images/logo-erbyfarm.jfif'
 import authV1BottomShape from '@images/svg/auth-v1-bottom-shape.svg?url'
 import authV1TopShape from '@images/svg/auth-v1-top-shape.svg?url'
 
@@ -66,20 +66,17 @@ async function onSubmit() {
             to="/"
             class="app-logo"
           >
-            <!-- eslint-disable vue/no-v-html -->
-            <div
-              class="d-flex"
-              v-html="logo"
-            />
-            <h1 class="app-logo-title">
-              sneat
-            </h1>
+            <img
+              :src="logo"
+              alt="Erbyfarm logo"
+              class="app-logo-img"
+            >
           </RouterLink>
         </VCardItem>
 
         <VCardText>
           <h4 class="text-h4 mb-1">
-            Welcome to Sneat! 👋🏻
+            Welcome to Erbyfarm! 👋🏻
           </h4>
           <p class="mb-0">
             Please sign-in to your account and start the adventure
@@ -127,18 +124,11 @@ async function onSubmit() {
                 />
 
                 <!-- remember me checkbox -->
-                <div class="d-flex align-center justify-space-between flex-wrap my-6">
+                <div class="d-flex justify-center my-6">
                   <VCheckbox
                     v-model="form.remember"
                     label="Remember me"
                   />
-
-                  <a
-                    class="text-primary"
-                    href="javascript:void(0)"
-                  >
-                    Forgot Password?
-                  </a>
                 </div>
 
                 <!-- login button -->
@@ -152,38 +142,6 @@ async function onSubmit() {
                 </VBtn>
               </VCol>
 
-              <!-- create account -->
-              <VCol
-                cols="12"
-                class="text-body-1 text-center"
-              >
-                <span class="d-inline-block">
-                  New on our platform?
-                </span>
-                <RouterLink
-                  class="text-primary ms-1 d-inline-block text-body-1"
-                  to="/register"
-                >
-                  Create an account
-                </RouterLink>
-              </VCol>
-
-              <VCol
-                cols="12"
-                class="d-flex align-center"
-              >
-                <VDivider />
-                <span class="mx-4 text-high-emphasis">or</span>
-                <VDivider />
-              </VCol>
-
-              <!-- auth providers -->
-              <VCol
-                cols="12"
-                class="text-center"
-              >
-                <AuthProvider />
-              </VCol>
             </VRow>
           </VForm>
         </VCardText>
@@ -194,4 +152,11 @@ async function onSubmit() {
 
 <style lang="scss">
 @use "@core-scss/template/pages/page-auth";
+
+.app-logo-img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  display: block;
+}
 </style>

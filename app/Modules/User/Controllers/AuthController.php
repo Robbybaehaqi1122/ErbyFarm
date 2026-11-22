@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -63,16 +64,15 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $request->user()?->currentAccessToken()?->delete();
-
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
-        $request->session()->regenerateToken();
 
         return response()->json([
             'message' => 'Logged out.',
-        ]);
+        ])->withCookie(
+            Cookie::forget(config('session.cookie'))
+        );
     }
 
     /**
@@ -81,7 +81,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         return response()->json([
-            'user' => new UserResource($request->user()),
+            'user' => $request->user() ? new UserResource($request->user()) : null,
         ]);
     }
 }
