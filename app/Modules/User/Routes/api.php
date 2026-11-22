@@ -31,6 +31,9 @@ Route::prefix('auth')->name('api.auth.')->group(function (): void {
 
 Route::prefix('users')->name('api.users.')->middleware(['auth:sanctum', 'role:admin'])->group(function (): void {
     Route::get('/', [UserController::class, 'index'])->name('index');
+    Route::post('/', [UserController::class, 'store'])->name('store');
+    Route::get('{user}', [UserController::class, 'show'])->name('show');
+    Route::put('{user}', [UserController::class, 'update'])->name('update');
     Route::patch('{user}/role', [UserController::class, 'updateRole'])->name('role.update');
     Route::delete('{user}', [UserController::class, 'destroy'])->name('destroy');
 });

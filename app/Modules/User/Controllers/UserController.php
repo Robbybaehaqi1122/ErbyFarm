@@ -3,6 +3,8 @@
 namespace App\Modules\User\Controllers;
 
 use App\Modules\User\Models\User;
+use App\Modules\User\Requests\StoreUserRequest;
+use App\Modules\User\Requests\UpdateUserRequest;
 use App\Modules\User\Requests\UpdateUserRoleRequest;
 use App\Modules\User\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
@@ -31,6 +33,55 @@ class UserController extends Controller
             ->paginate($request->integer('per_page', 15));
 
         return UserResource::collection($users);
+    }
+
+    /**
+     * Show a single user.
+     */
+    public function show(User $user): JsonResponse
+    {
+        return response()->json([
+            'user' => new UserResource($user->load('roles')),
+        ]);
+    }
+
+    /**
+     * Create a new user.
+     */
+    public function store(StoreUserRequest $request): JsonResponse
+    {
+        $user = User::create([
+            'name' => $request->validated('name'),
+            'email' => $request->validated('email'),
+            'password' => $request->validated('password'),
+        ]);
+
+        $user->assignRole($request->validated('role'));
+
+        return response()->json([
+            'user' => new UserResource($user->load('roles')),
+        ], 201);
+    }
+
+    /**
+     * Update user profile (name, email) and optionally role.
+     */
+    public function update(UpdateUserRequest $request, User $user): JsonResponse
+    {
+        $data = $request->validated();
+
+        $user->update([
+            'name' => $data['name'],
+            'email' => $data['email'],
+        ]);
+
+        if (array_key_exists('role', $data)) {
+            $user->syncRoles([$data['role']]);
+        }
+
+        return response()->json([
+            'user' => new UserResource($user->fresh('roles')),
+        ]);
     }
 
     /**

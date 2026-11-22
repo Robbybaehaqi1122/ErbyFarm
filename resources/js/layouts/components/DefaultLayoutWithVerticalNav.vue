@@ -1,6 +1,6 @@
 <script setup>
 import NavItems from '@/layouts/components/NavItems.vue'
-import logo from '@images/logo.svg?raw'
+import logoErbyfarm from '@images/logo-erbyfarm.jfif'
 import VerticalNavLayout from '@layouts/components/VerticalNavLayout.vue'
 import Footer from '@/layouts/components/Footer.vue'
 import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue'
@@ -38,14 +38,6 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
 
         <VSpacer />
 
-        <IconBtn
-          href="https://github.com/themeselection/sneat-vuetify-vuejs-laravel-admin-template-free"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <VIcon icon="bxl-github" />
-        </IconBtn>
-
         <IconBtn>
           <VIcon icon="bx-bell" />
         </IconBtn>
@@ -61,16 +53,11 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
         to="/"
         class="app-logo app-title-wrapper"
       >
-        <!-- eslint-disable vue/no-v-html -->
-        <div
-          class="d-flex"
-          v-html="logo"
-        />
-        <!-- eslint-enable -->
-
-        <h1 class="app-logo-title">
-          sneat
-        </h1>
+        <img
+          :src="logoErbyfarm"
+          alt="Erbyfarm logo"
+          class="app-logo-img"
+        >
       </RouterLink>
 
       <IconBtn
@@ -115,6 +102,12 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
     font-weight: 500;
     line-height: 1.75rem;
     text-transform: uppercase;
+  }
+
+  .app-logo-img {
+    block-size: 48px;
+    inline-size: auto;
+    object-fit: contain;
   }
 }
 </style>

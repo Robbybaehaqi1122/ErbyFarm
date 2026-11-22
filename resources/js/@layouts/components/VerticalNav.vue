@@ -1,7 +1,7 @@
 <script setup>
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { useDisplay } from 'vuetify'
-import logo from '@images/logo.svg?raw'
+import logoErbyfarm from '@images/logo-erbyfarm.jfif'
 
 const props = defineProps({
   tag: {
@@ -60,14 +60,11 @@ const handleNavScroll = evt => {
           to="/"
           class="app-logo app-title-wrapper"
         >
-          <div
-            class="d-flex"
-            v-html="logo"
-          />
-
-          <h1 class="leading-normal">
-            sneat
-          </h1>
+          <img
+            :src="logoErbyfarm"
+            alt="Erbyfarm logo"
+            class="app-logo-img"
+          >
         </RouterLink>
       </slot>
     </div>
@@ -102,6 +99,12 @@ const handleNavScroll = evt => {
     font-weight: 500;
     line-height: 1.75rem;
     text-transform: uppercase;
+  }
+
+  .app-logo-img {
+    block-size: 48px;
+    inline-size: auto;
+    object-fit: contain;
   }
 }
 </style>

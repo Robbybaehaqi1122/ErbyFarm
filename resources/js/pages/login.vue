@@ -15,15 +15,24 @@ const form = ref({
 })
 
 const isPasswordVisible = ref(false)
-const errorMessage = ref('')
 const fieldErrors = ref({})
 
+const showSnackbar = ref(false)
+const snackbarMessage = ref('')
+const snackbarType = ref('error')
+
 async function onSubmit() {
-  errorMessage.value = ''
   fieldErrors.value = {}
 
   try {
     await auth.login(form.value)
+
+    snackbarMessage.value = 'Login berhasil. Selamat datang di Erbyfarm!'
+    snackbarType.value = 'success'
+    showSnackbar.value = true
+
+    // Tampilkan notifikasi sebentar sebelum pindah halaman
+    await new Promise(resolve => setTimeout(resolve, 700))
 
     const redirect = typeof router.currentRoute.value.query.redirect === 'string'
       ? router.currentRoute.value.query.redirect
@@ -34,8 +43,11 @@ async function onSubmit() {
   catch (error) {
     fieldErrors.value = error.errors ?? {}
 
-    if (!Object.keys(fieldErrors.value).length)
-      errorMessage.value = error.data?.message ?? 'Login failed. Please check your credentials.'
+    if (!Object.keys(fieldErrors.value).length) {
+      snackbarMessage.value = error.data?.message ?? 'Login gagal. Periksa kembali email dan password Anda.'
+      snackbarType.value = 'error'
+      showSnackbar.value = true
+    }
   }
 }
 </script>
@@ -86,18 +98,6 @@ async function onSubmit() {
         <VCardText>
           <VForm @submit.prevent="onSubmit">
             <VRow>
-              <VCol
-                v-if="errorMessage"
-                cols="12"
-              >
-                <VAlert
-                  type="error"
-                  variant="tonal"
-                >
-                  {{ errorMessage }}
-                </VAlert>
-              </VCol>
-
               <!-- email -->
               <VCol cols="12">
                 <VTextField
@@ -141,10 +141,28 @@ async function onSubmit() {
                   Login
                 </VBtn>
               </VCol>
-
             </VRow>
           </VForm>
         </VCardText>
+
+        <!-- Notifikasi login berhasil / gagal -->
+        <VSnackbar
+          v-model="showSnackbar"
+          :timeout="4000"
+          :color="snackbarType === 'success' ? 'success' : 'error'"
+        >
+          {{ snackbarMessage }}
+          <template #append>
+            <VBtn
+              icon
+              color="white"
+              size="small"
+              @click="showSnackbar = false"
+            >
+              ×
+            </VBtn>
+          </template>
+        </VSnackbar>
       </VCard>
     </div>
   </div>

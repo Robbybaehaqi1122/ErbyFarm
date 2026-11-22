@@ -1,18 +1,18 @@
 # AGENTS.md
 
-`erby-farm` is a renamed **Sneat Vuetify Vue 3 + Laravel 11** admin template being shaped into a farm management app. Laravel boots one Vue SPA via a single Blade shell; feature modules live in `app/Modules/`.
+`erby-farm` is a renamed **Sneat Vuetify Vue 3 + Laravel 11** admin template shaped into a farm management app. Laravel boots one Vue SPA via a single Blade shell; feature modules live in `app/Modules/`.
 
 ## Commands (exact)
 
 - `composer install` — PHP deps.
-- `npm install` — JS deps; `postinstall` runs `build:icons`, which generates `resources/js/plugins/iconify/icons.css`.
+- `npm install` — JS deps; `postinstall` runs `build:icons`, generating gitignored `resources/js/plugins/iconify/icons.css`.
 - `composer dev` — `concurrently` runs `php artisan serve`, `php artisan queue:listen --tries=1`, `php artisan pail --timeout=0`, `npm run dev`. Or run `php artisan serve` + `npm run dev` separately.
-- `php artisan test` — PHPUnit (sqlite `:memory:`, overrides `.env` MySQL). Focus: `php artisan test --filter=TestName`.
+- `php artisan test` — PHPUnit (sqlite `:memory:`, overrides `.env` MySQL; `BCRYPT_ROUNDS=4`). Focus: `php artisan test --filter=TestName`.
 - `npm run build` — production Vite build (~50s). **Must pass before considering a change complete.**
 - `npm run lint` — ESLint **with `--fix`**; it rewrites files across the repo. Run after editing Vue/JS.
 - `./vendor/bin/pint` — PHP formatter, default Laravel preset; no `pint.json`.
 
-No CI workflows, no frontend tests, no pre-commit config. The repo **is** a git repo (`.git/` exists); `.gitignore` ignores `node_modules`, `vendor`, `public/build`, `resources/js/plugins/iconify/icons.css`, and `.env*`.
+No CI workflows, no frontend tests, no pre-commit config. Git repo; `.gitignore` ignores `node_modules`, `vendor`, `public/build`, `resources/js/plugins/iconify/icons.css`, `.env*`.
 
 ## Backend architecture (modular)
 
@@ -21,17 +21,17 @@ No CI workflows, no frontend tests, no pre-commit config. The repo **is** a git 
 - **Route rules:** Module API route files define only their path — **do not** prefix with `/api` (the provider adds it). `routes/web.php` has only comments; do not add routes there.
 - The SPA catch-all `Route::view('{any?}', 'application')->name('spa')` is registered **last**, excludes `api/*` (`^(?!api(?:/|$)).*$`), and cannot shadow module routes.
 - `config/modules.php`: `path`, `auto_discover`, `enabled` (allow-list), `disabled` (deny-list). Empty `enabled` = all discovered modules enabled.
-- Cross-module shared (non-domain) code: `app/Support/`. Standard skeleton: `app/Modules/README.md`.
+- Cross-module shared code: `app/Support/`.
 
-## Modules present (9)
+## Modules present (8)
 
 | Module | Owns / API | Notable behavior |
 |--------|-----------|------------------|
-| User | users, roles, `/api/auth/*`, `/api/users` | Sanctum session cookie + spatie/laravel-permission. Roles: admin, operator, viewer. **First registered account becomes admin; later ones viewer.** `config/auth.php` model = `App\Modules\User\Models\User`. **Auth quirk:** `logout` clears the session cookie via `Cookie::forget()` (session-based Sanctum `TransientToken` has no `delete()` — calling it 500s). `me` returns `user: null` when unauthenticated, not an error. The router guard calls `fetchUser()` on every nav; if logout doesn't clear the cookie, a refresh sends the user back to dashboard. |
+| User | users, roles, `/api/auth/*`, `/api/users` | Sanctum session cookie + spatie/laravel-permission. Roles: admin, operator, viewer. **First registered account becomes admin; later ones viewer.** `config/auth.php` model = `App\Modules\User\Models\User`. **Auth quirk:** `logout` clears the session cookie via `Cookie::forget()` (session-based Sanctum `TransientToken` has no `delete()` — calling it 500s). `me` returns `user: null` when unauthenticated. Router guard calls `fetchUser()` on every nav; if logout doesn't clear the cookie, a refresh sends the user back to dashboard. |
 | Farm | `farms`, `/api/farms` | `name`, `capacity`, `status` (active/maintenance/inactive), `notes`. Gate policy. |
 | Livestock | `livestocks`, `/api/livestocks` | `farm_id` FK (cascade). `current_population`/`age_weeks` auto-filled on create when omitted. `Farm::livestocks()` hasMany. |
 | Production | `daily_productions`, `/api/daily-productions` | Unique on `(livestock_id, date)`. **Mortality sync:** recording/editing/deleting `mortality` adjusts `livestocks.current_population` in a transaction; mortality above live population → 422. |
-| Report | read-only, `/api/reports` | Aggregates `daily_productions`/`livestocks`/`farms`. Filters `from`, `to`, `farm_id`, `group_by` (day\|month). **Hen Day** = total_eggs / sum(daily live population) × 100; population = current_population + mortality on/after date. Viewer may read. Invalid date range → 422. |
+| Report | read-only, `/api/reports` | Aggregates `daily_productions`/`livestocks`/`farms`. Filters `from`, `to`, `farm_id`, `group_by` (day\|month). **Hen Day** = total_eggs / sum(daily live population) × 100. Viewer may read. Invalid date range → 422. |
 | Finance | `expenses`, `/api/expenses` | `farm_id` nullable (`nullOnDelete`); `null` = general business expense (index filter `farm_id=general`). Categories: pakan, obat_vaksin, operasional, gaji, lain_lain. Only admin deletes. |
 | Inventory | `inventories`, `/api/inventories` | Categories: pakan, obat, vitamin, perlengkapan. `stockStatus()` → out/low/safe. **Index summary is global** (ignores table filters). Only admin deletes. |
 | Health | `health_records`, `/api/health-records` | `livestock_id` FK. Types: vaksinasi, pengobatan, vitamin, culling. Only admin deletes. |
@@ -49,9 +49,10 @@ Tests: `tests/Feature/` (Report, Production, Livestock, Inventory, Health, Finan
 
 - Auto-imported globals: Vue, Vue Router, `@vueuse/core`, `@vueuse/math`, Pinia. Do not manually `import ref/computed/useRouter`.
 - Auto-registered components: Vuetify + `resources/js/components/` and `resources/js/@core/components/`. `VueApexCharts` auto-imported. **Do not** import from `vuetify/components` or `vue3-apexcharts` directly (ESLint forbids).
+- VMenu: use `activator="parent"` with `<VMenu>` nested inside its activator element (see `MoreBtn.vue`, `UserProfile.vue`). The Vuetify 2 `#activator="{ on, attrs }"` slot with `v-on="on"` throws `v-on with no argument expects an object value` and shows no dropdown.
 - Aliases: `@` → `resources/js`, `@core`, `@layouts`, `@images` → `resources/images`, `@styles` → `resources/styles`. Never `@/assets/images` or `@/assets/styles`.
 - ESLint: no semicolons, single quotes, 2-space indent, trailing commas, logical props (`ps-*`/`pe-*`/`ms-*`/`me-*`); `pl-*`/`pr-*`/`ml-*`/`mr-*` rejected.
-- Icons: Boxicons (`bx-*`, `bxl-*`, `bxs-*`) plus a few `mdi`/`fa` icons, bundled into the gitignored `resources/js/plugins/iconify/icons.css` by `npm run build:icons`. **Do not hand-edit**; `tabler-*` rejected by ESLint.
+- Icons: Boxicons (`bx-*`, `bxl-*`, `bxs-*`) plus a few `mdi`/`fa`, bundled into gitignored `resources/js/plugins/iconify/icons.css` by `npm run build:icons`. **Do not hand-edit**; `tabler-*` rejected by ESLint.
 - Generated — do not hand-edit: `auto-imports.d.ts`, `components.d.ts`, `.eslintrc-auto-import.json`, `resources/js/plugins/iconify/icons.css`.
 
 ## Backend / data
