@@ -27,7 +27,7 @@ const auth = useAuthStore()
   />
 
   <VerticalNavLink
-    v-if="auth.hasRole(['admin', 'operator'])"
+    v-if="auth.hasRole(['admin', 'developer', 'operator'])"
     :item="{
       title: 'Kandang',
       to: '/farms',
@@ -36,7 +36,7 @@ const auth = useAuthStore()
   />
 
   <VerticalNavLink
-    v-if="auth.hasRole(['admin', 'operator'])"
+    v-if="auth.hasRole(['admin', 'developer', 'operator'])"
     :item="{
       title: 'Populasi Ayam',
       to: '/livestocks',
@@ -45,7 +45,7 @@ const auth = useAuthStore()
   />
 
   <VerticalNavLink
-    v-if="auth.hasRole(['admin', 'operator'])"
+    v-if="auth.hasRole(['admin', 'developer', 'operator'])"
     :item="{
       title: 'Produksi Harian',
       to: '/productions',
@@ -54,7 +54,7 @@ const auth = useAuthStore()
   />
 
   <VerticalNavLink
-    v-if="auth.hasRole(['admin', 'operator', 'viewer'])"
+    v-if="auth.hasRole(['admin', 'developer', 'operator', 'viewer'])"
     :item="{
       title: 'Laporan & Analitik',
       to: '/reports',
@@ -63,7 +63,7 @@ const auth = useAuthStore()
   />
 
   <VerticalNavLink
-    v-if="auth.hasRole(['admin', 'operator', 'viewer'])"
+    v-if="auth.hasRole(['admin', 'developer', 'operator', 'viewer'])"
     :item="{
       title: 'Keuangan & Biaya',
       to: '/finance',
@@ -72,7 +72,7 @@ const auth = useAuthStore()
   />
 
   <VerticalNavLink
-    v-if="auth.hasRole(['admin', 'operator', 'viewer'])"
+    v-if="auth.hasRole(['admin', 'developer', 'operator', 'viewer'])"
     :item="{
       title: 'Manajemen Stok',
       to: '/inventory',
@@ -81,7 +81,7 @@ const auth = useAuthStore()
   />
 
   <VerticalNavLink
-    v-if="auth.hasRole(['admin', 'operator', 'viewer'])"
+    v-if="auth.hasRole(['admin', 'developer', 'operator', 'viewer'])"
     :item="{
       title: 'Kesehatan & Vaksin',
       to: '/health-records',

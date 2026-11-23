@@ -23,7 +23,7 @@ class AuthTest extends TestCase
         $this->withHeader('Origin', 'http://localhost');
     }
 
-    public function test_first_registered_user_becomes_admin(): void
+    public function test_first_registered_user_becomes_developer(): void
     {
         $response = $this->postJson('/api/auth/register', [
             'name' => 'First Owner',
@@ -34,7 +34,7 @@ class AuthTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('user.email', 'owner@example.com')
-            ->assertJsonPath('user.roles.0', Role::Admin->value);
+            ->assertJsonPath('user.roles.0', Role::Developer->value);
 
         $this->assertDatabaseHas('users', ['email' => 'owner@example.com']);
     }
@@ -136,5 +136,63 @@ class AuthTest extends TestCase
 
         $this->deleteJson("/api/users/{$admin->id}")
             ->assertUnprocessable();
+    }
+
+    public function test_user_can_update_own_profile(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole(Role::Viewer->value);
+
+        Sanctum::actingAs($user);
+
+        $this->putJson('/api/auth/profile', [
+            'name' => 'Erby User',
+            'organization' => 'Erby Lintas Inovasi',
+            'phone' => '085117511220',
+            'address' => 'Subang, Blanakan',
+            'zip_code' => '41259',
+            'country' => 'Indonesia',
+            'language' => 'Indonesian',
+            'timezone' => '(GMT+07:00) Jakarta',
+            'currency' => 'IDR',
+        ])->assertOk()
+            ->assertJsonPath('user.name', 'Erby User')
+            ->assertJsonPath('user.organization', 'Erby Lintas Inovasi')
+            ->assertJsonPath('user.currency', 'IDR');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'name' => 'Erby User',
+            'organization' => 'Erby Lintas Inovasi',
+        ]);
+    }
+
+    public function test_user_cannot_change_own_role_through_profile(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole(Role::Viewer->value);
+
+        Sanctum::actingAs($user);
+
+        $this->putJson('/api/auth/profile', [
+            'role' => Role::Admin->value,
+        ])->assertOk();
+
+        $this->assertTrue($user->fresh()->hasRole(Role::Viewer->value));
+        $this->assertFalse($user->fresh()->hasRole(Role::Admin->value));
+    }
+
+    public function test_deactivated_user_cannot_login(): void
+    {
+        User::factory()->create([
+            'email' => 'inactive@example.com',
+            'is_active' => false,
+        ]);
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'inactive@example.com',
+            'password' => 'password',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('email');
     }
 }

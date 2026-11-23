@@ -6,12 +6,14 @@ const router = useRouter()
 const auth = useAuthStore()
 
 const displayName = computed(() => auth.user?.name ?? 'Guest')
+const avatarSrc = computed(() => auth.user?.avatar_url || avatar1)
 
 const roleLabel = computed(() => {
   const labels = {
     admin: 'Admin / Owner',
     operator: 'Operator Kandang',
     viewer: 'Viewer / Staff',
+    developer: 'Superadmin / Developer',
   }
 
   return auth.roles.map(role => labels[role] ?? role).join(', ') || 'Member'
@@ -37,7 +39,7 @@ async function logout() {
       color="primary"
       variant="tonal"
     >
-      <VImg :src="avatar1" />
+      <VImg :src="avatarSrc" />
 
       <!-- SECTION Menu -->
       <VMenu
@@ -62,7 +64,7 @@ async function logout() {
                     color="primary"
                     variant="tonal"
                   >
-                    <VImg :src="avatar1" />
+                    <VImg :src="avatarSrc" />
                   </VAvatar>
                 </VBadge>
               </VListItemAction>
@@ -75,7 +77,7 @@ async function logout() {
           </VListItem>
           <VDivider class="my-2" />
 
-          <!-- 👉 Profile -->
+          <!-- 👉 Profile (Account, Security & Notifications) -->
           <VListItem
             link
             to="/account-settings"
@@ -89,45 +91,6 @@ async function logout() {
             </template>
 
             <VListItemTitle>Profile</VListItemTitle>
-          </VListItem>
-
-          <!-- 👉 Settings -->
-          <VListItem link>
-            <template #prepend>
-              <VIcon
-                class="me-2"
-                icon="bx-cog"
-                size="22"
-              />
-            </template>
-
-            <VListItemTitle>Settings</VListItemTitle>
-          </VListItem>
-
-          <!-- 👉 Pricing -->
-          <VListItem link>
-            <template #prepend>
-              <VIcon
-                class="me-2"
-                icon="bx-dollar"
-                size="22"
-              />
-            </template>
-
-            <VListItemTitle>Pricing</VListItemTitle>
-          </VListItem>
-
-          <!-- 👉 FAQ -->
-          <VListItem link>
-            <template #prepend>
-              <VIcon
-                class="me-2"
-                icon="bx-help-circle"
-                size="22"
-              />
-            </template>
-
-            <VListItemTitle>FAQ</VListItemTitle>
           </VListItem>
 
           <!-- Divider -->

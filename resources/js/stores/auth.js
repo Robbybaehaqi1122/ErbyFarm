@@ -9,7 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => Boolean(user.value))
   const roles = computed(() => user.value?.roles ?? [])
-  const isAdmin = computed(() => roles.value.includes('admin'))
+  const isAdmin = computed(() => roles.value.includes('admin') || roles.value.includes('developer'))
 
   async function fetchUser({ force = false } = {}) {
     if (initialized.value && !force)

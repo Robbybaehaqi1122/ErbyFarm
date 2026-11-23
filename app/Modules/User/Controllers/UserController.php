@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Routing\Controller;
+use Spatie\Permission\Models\Role as SpatieRole;
 
 class UserController extends Controller
 {
@@ -56,6 +57,9 @@ class UserController extends Controller
             'password' => $request->validated('password'),
         ]);
 
+        // Ensure the role exists in the database before assigning (Spatie).
+        SpatieRole::findOrCreate($request->validated('role'), 'web');
+
         $user->assignRole($request->validated('role'));
 
         return response()->json([
@@ -64,18 +68,40 @@ class UserController extends Controller
     }
 
     /**
-     * Update user profile (name, email) and optionally role.
+     * Update user profile and account details.
      */
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
         $data = $request->validated();
 
-        $user->update([
-            'name' => $data['name'],
-            'email' => $data['email'],
-        ]);
+        $accountFields = [
+            'name',
+            'email',
+            'organization',
+            'phone',
+            'address',
+            'state',
+            'zip_code',
+            'country',
+            'language',
+            'timezone',
+            'currency',
+            'avatar_url',
+            'is_active',
+        ];
+
+        $updateData = [];
+        foreach ($accountFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $updateData[$field] = $data[$field];
+            }
+        }
+
+        $user->update($updateData);
 
         if (array_key_exists('role', $data)) {
+            // Ensure the role exists in the database before syncing (Spatie).
+            SpatieRole::findOrCreate($data['role'], 'web');
             $user->syncRoles([$data['role']]);
         }
 
@@ -89,6 +115,9 @@ class UserController extends Controller
      */
     public function updateRole(UpdateUserRoleRequest $request, User $user): JsonResponse
     {
+        // Ensure the role exists in the database before syncing (Spatie).
+        SpatieRole::findOrCreate($request->validated('role'), 'web');
+
         $user->syncRoles([$request->validated('role')]);
 
         return response()->json([

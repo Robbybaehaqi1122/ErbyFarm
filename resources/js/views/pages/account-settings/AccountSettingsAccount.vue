@@ -1,116 +1,183 @@
 <script setup>
+import { http } from '@/services/http'
+import { useAuthStore } from '@/stores/auth'
 import avatar1 from '@images/avatars/avatar-1.png'
 
-const accountData = {
-  avatarImg: avatar1,
-  firstName: 'john',
-  lastName: 'Doe',
-  email: 'johnDoe@example.com',
-  org: 'ThemeSelection',
-  phone: '+1 (917) 543-9876',
-  address: '123 Main St, New York, NY 10001',
-  state: 'New York',
-  zip: '10001',
-  country: 'USA',
-  language: 'English',
-  timezone: '(GMT-11:00) International Date Line West',
-  currency: 'USD',
-}
-
+const auth = useAuthStore()
 const refInputEl = ref()
-const accountDataLocal = ref(structuredClone(accountData))
-const isAccountDeactivated = ref(false)
+const form = ref({})
+const savedUser = ref(null)
+const saving = ref(false)
+const deactivating = ref(false)
+const confirmDeactivate = ref(false)
+const errorMessage = ref('')
+const showSnackbar = ref(false)
+const snackbarMessage = ref('')
 
-const resetForm = () => {
-  accountDataLocal.value = structuredClone(accountData)
+const roleLabels = {
+  developer: 'Superadmin / Developer',
+  admin: 'Admin / Owner',
+  operator: 'Operator Kandang',
+  viewer: 'Viewer / Staff',
 }
 
-const changeAvatar = file => {
-  const fileReader = new FileReader()
-  const { files } = file.target
-  if (files && files.length) {
-    fileReader.readAsDataURL(files[0])
-    fileReader.onload = () => {
-      if (typeof fileReader.result === 'string')
-        accountDataLocal.value.avatarImg = fileReader.result
-    }
+const roleLabel = computed(() => {
+  const role = auth.roles[0]
+
+  return role ? roleLabels[role] ?? role : 'Member'
+})
+
+const avatarSrc = computed(() => form.value.avatarUrl || avatar1)
+
+const timezones = [
+  '(GMT+07:00) Jakarta',
+  '(GMT+08:00) Singapore',
+  '(GMT+09:00) Tokyo',
+  '(GMT+00:00) London',
+  '(GMT+01:00) Berlin',
+  '(GMT-05:00) Eastern Time (US & Canada)',
+  '(GMT-08:00) Pacific Time (US & Canada)',
+]
+
+const currencies = ['IDR', 'USD', 'EUR', 'GBP', 'AUD', 'BRL', 'CAD', 'CNY']
+const countries = ['Indonesia', 'USA', 'Canada', 'UK', 'India', 'Australia']
+const languages = ['Indonesian', 'English', 'Arabic', 'Hindi', 'Urdu']
+
+function fillForm(user) {
+  if (!user)
+    return
+
+  savedUser.value = { ...user }
+  form.value = {
+    name: user.name ?? '',
+    email: user.email ?? '',
+    organization: user.organization ?? '',
+    phone: user.phone ?? '',
+    address: user.address ?? '',
+    state: user.state ?? '',
+    zipCode: user.zip_code ?? '',
+    country: user.country ?? '',
+    language: user.language ?? '',
+    timezone: user.timezone ?? '',
+    currency: user.currency ?? '',
+    avatarUrl: user.avatar_url ?? '',
+    isActive: user.is_active ?? true,
   }
 }
 
-// reset avatar image
-const resetAvatar = () => {
-  accountDataLocal.value.avatarImg = accountData.avatarImg
+function notifySuccess(message) {
+  snackbarMessage.value = message
+  showSnackbar.value = true
 }
 
-const timezones = [
-  '(GMT-11:00) International Date Line West',
-  '(GMT-11:00) Midway Island',
-  '(GMT-10:00) Hawaii',
-  '(GMT-09:00) Alaska',
-  '(GMT-08:00) Pacific Time (US & Canada)',
-  '(GMT-08:00) Tijuana',
-  '(GMT-07:00) Arizona',
-  '(GMT-07:00) Chihuahua',
-  '(GMT-07:00) La Paz',
-  '(GMT-07:00) Mazatlan',
-  '(GMT-07:00) Mountain Time (US & Canada)',
-  '(GMT-06:00) Central America',
-  '(GMT-06:00) Central Time (US & Canada)',
-  '(GMT-06:00) Guadalajara',
-  '(GMT-06:00) Mexico City',
-  '(GMT-06:00) Monterrey',
-  '(GMT-06:00) Saskatchewan',
-  '(GMT-05:00) Bogota',
-  '(GMT-05:00) Eastern Time (US & Canada)',
-  '(GMT-05:00) Indiana (East)',
-  '(GMT-05:00) Lima',
-  '(GMT-05:00) Quito',
-  '(GMT-04:00) Atlantic Time (Canada)',
-  '(GMT-04:00) Caracas',
-  '(GMT-04:00) La Paz',
-  '(GMT-04:00) Santiago',
-  '(GMT-03:30) Newfoundland',
-  '(GMT-03:00) Brasilia',
-  '(GMT-03:00) Buenos Aires',
-  '(GMT-03:00) Georgetown',
-  '(GMT-03:00) Greenland',
-  '(GMT-02:00) Mid-Atlantic',
-  '(GMT-01:00) Azores',
-  '(GMT-01:00) Cape Verde Is.',
-  '(GMT+00:00) Casablanca',
-  '(GMT+00:00) Dublin',
-  '(GMT+00:00) Edinburgh',
-  '(GMT+00:00) Lisbon',
-  '(GMT+00:00) London',
-]
+function changeAvatar(event) {
+  const file = event.target.files?.[0]
 
-const currencies = [
-  'USD',
-  'EUR',
-  'GBP',
-  'AUD',
-  'BRL',
-  'CAD',
-  'CNY',
-  'CZK',
-  'DKK',
-  'HKD',
-  'HUF',
-  'INR',
-]
+  if (!file)
+    return
+
+  if (file.size > 800 * 1024) {
+    errorMessage.value = 'Ukuran gambar maksimal 800 KB.'
+
+    return
+  }
+
+  const fileReader = new FileReader()
+
+  fileReader.onload = () => {
+    if (typeof fileReader.result === 'string')
+      form.value.avatarUrl = fileReader.result
+  }
+  fileReader.readAsDataURL(file)
+}
+
+function resetAvatar() {
+  form.value.avatarUrl = savedUser.value?.avatar_url ?? ''
+}
+
+function resetForm() {
+  fillForm(savedUser.value)
+  errorMessage.value = ''
+}
+
+async function saveProfile() {
+  saving.value = true
+  errorMessage.value = ''
+
+  try {
+    const payload = {
+      ...form.value,
+      ['zip_code']: form.value.zipCode,
+      ['avatar_url']: form.value.avatarUrl,
+    }
+
+    delete payload.zipCode
+    delete payload.avatarUrl
+    delete payload.isActive
+
+    const response = await http.put('/api/auth/profile', payload)
+
+    auth.user = response.user
+    fillForm(response.user)
+    notifySuccess('Profil berhasil disimpan.')
+  }
+  catch (error) {
+    errorMessage.value = error.data?.message ?? 'Gagal menyimpan profil.'
+  }
+  finally {
+    saving.value = false
+  }
+}
+
+async function deactivateAccount() {
+  deactivating.value = true
+  errorMessage.value = ''
+
+  try {
+    const response = await http.put('/api/auth/profile', { ['is_active']: false })
+
+    auth.user = response.user
+    fillForm(response.user)
+    confirmDeactivate.value = false
+    notifySuccess('Akun berhasil dinonaktifkan.')
+  }
+  catch (error) {
+    errorMessage.value = error.data?.message ?? 'Gagal menonaktifkan akun.'
+  }
+  finally {
+    deactivating.value = false
+  }
+}
+
+onMounted(async () => {
+  await auth.fetchUser({ force: true })
+  fillForm(auth.user)
+})
+
+watch(() => auth.user, user => fillForm(user))
 </script>
 
 <template>
   <VRow>
     <VCol cols="12">
+      <VAlert
+        v-if="errorMessage"
+        type="error"
+        variant="tonal"
+        class="mb-4"
+        closable
+        @click:close="errorMessage = ''"
+      >
+        {{ errorMessage }}
+      </VAlert>
+
       <VCard title="Account Details">
-        <VCardText class="d-flex">
+        <VCardText class="d-flex flex-wrap align-center gap-6">
           <!-- 👉 Avatar -->
           <VAvatar
             rounded="lg"
             size="100"
-            class="me-6"
-            :image="accountDataLocal.avatarImg"
+            :image="avatarSrc"
           />
 
           <!-- 👉 Upload Photo -->
@@ -159,30 +226,17 @@ const currencies = [
         <VDivider />
 
         <VCardText>
-          <!-- 👉 Form -->
-          <VForm class="mt-6">
+          <VForm @submit.prevent="saveProfile">
             <VRow>
-              <!-- 👉 First Name -->
+              <!-- 👉 Name -->
               <VCol
                 md="6"
                 cols="12"
               >
                 <VTextField
-                  v-model="accountDataLocal.firstName"
-                  placeholder="John"
-                  label="First Name"
-                />
-              </VCol>
-
-              <!-- 👉 Last Name -->
-              <VCol
-                md="6"
-                cols="12"
-              >
-                <VTextField
-                  v-model="accountDataLocal.lastName"
-                  placeholder="Doe"
-                  label="Last Name"
+                  v-model="form.name"
+                  label="Nama Lengkap"
+                  required
                 />
               </VCol>
 
@@ -192,10 +246,36 @@ const currencies = [
                 md="6"
               >
                 <VTextField
-                  v-model="accountDataLocal.email"
+                  v-model="form.email"
                   label="E-mail"
-                  placeholder="johndoe@gmail.com"
                   type="email"
+                  required
+                />
+              </VCol>
+
+              <!-- 👉 Role (read only) -->
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VTextField
+                  :model-value="roleLabel"
+                  label="Role"
+                  readonly
+                  hint="Role diubah oleh admin di menu Pengguna"
+                  persistent-hint
+                />
+              </VCol>
+
+              <!-- 👉 Status (read only) -->
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VTextField
+                  :model-value="form.isActive ? 'Aktif' : 'Nonaktif'"
+                  label="Status Akun"
+                  readonly
                 />
               </VCol>
 
@@ -205,9 +285,8 @@ const currencies = [
                 md="6"
               >
                 <VTextField
-                  v-model="accountDataLocal.org"
+                  v-model="form.organization"
                   label="Organization"
-                  placeholder="ThemeSelection"
                 />
               </VCol>
 
@@ -217,9 +296,8 @@ const currencies = [
                 md="6"
               >
                 <VTextField
-                  v-model="accountDataLocal.phone"
+                  v-model="form.phone"
                   label="Phone Number"
-                  placeholder="+1 (917) 543-9876"
                 />
               </VCol>
 
@@ -229,9 +307,8 @@ const currencies = [
                 md="6"
               >
                 <VTextField
-                  v-model="accountDataLocal.address"
+                  v-model="form.address"
                   label="Address"
-                  placeholder="123 Main St, New York, NY 10001"
                 />
               </VCol>
 
@@ -241,9 +318,8 @@ const currencies = [
                 md="6"
               >
                 <VTextField
-                  v-model="accountDataLocal.state"
+                  v-model="form.state"
                   label="State"
-                  placeholder="New York"
                 />
               </VCol>
 
@@ -253,9 +329,8 @@ const currencies = [
                 md="6"
               >
                 <VTextField
-                  v-model="accountDataLocal.zip"
+                  v-model="form.zipCode"
                   label="Zip Code"
-                  placeholder="10001"
                 />
               </VCol>
 
@@ -265,10 +340,9 @@ const currencies = [
                 md="6"
               >
                 <VSelect
-                  v-model="accountDataLocal.country"
+                  v-model="form.country"
                   label="Country"
-                  :items="['USA', 'Canada', 'UK', 'India', 'Australia']"
-                  placeholder="Select Country"
+                  :items="countries"
                 />
               </VCol>
 
@@ -278,10 +352,9 @@ const currencies = [
                 md="6"
               >
                 <VSelect
-                  v-model="accountDataLocal.language"
+                  v-model="form.language"
                   label="Language"
-                  placeholder="Select Language"
-                  :items="['English', 'Spanish', 'Arabic', 'Hindi', 'Urdu']"
+                  :items="languages"
                 />
               </VCol>
 
@@ -291,9 +364,8 @@ const currencies = [
                 md="6"
               >
                 <VSelect
-                  v-model="accountDataLocal.timezone"
+                  v-model="form.timezone"
                   label="Timezone"
-                  placeholder="Select Timezone"
                   :items="timezones"
                   :menu-props="{ maxHeight: 200 }"
                 />
@@ -305,9 +377,8 @@ const currencies = [
                 md="6"
               >
                 <VSelect
-                  v-model="accountDataLocal.currency"
+                  v-model="form.currency"
                   label="Currency"
-                  placeholder="Select Currency"
                   :items="currencies"
                   :menu-props="{ maxHeight: 200 }"
                 />
@@ -318,7 +389,13 @@ const currencies = [
                 cols="12"
                 class="d-flex flex-wrap gap-4"
               >
-                <VBtn>Save changes</VBtn>
+                <VBtn
+                  type="submit"
+                  color="primary"
+                  :loading="saving"
+                >
+                  Save changes
+                </VBtn>
 
                 <VBtn
                   color="secondary"
@@ -341,20 +418,40 @@ const currencies = [
         <VCardText>
           <div>
             <VCheckbox
-              v-model="isAccountDeactivated"
+              v-model="confirmDeactivate"
               label="I confirm my account deactivation"
             />
           </div>
 
           <VBtn
-            :disabled="!isAccountDeactivated"
+            :disabled="!confirmDeactivate"
             color="error"
             class="mt-3"
+            :loading="deactivating"
+            @click="deactivateAccount"
           >
             Deactivate Account
           </VBtn>
         </VCardText>
       </VCard>
     </VCol>
+
+    <VSnackbar
+      v-model="showSnackbar"
+      :timeout="4000"
+      color="success"
+    >
+      {{ snackbarMessage }}
+      <template #append>
+        <VBtn
+          icon
+          color="white"
+          size="small"
+          @click="showSnackbar = false"
+        >
+          ×
+        </VBtn>
+      </template>
+    </VSnackbar>
   </VRow>
 </template>

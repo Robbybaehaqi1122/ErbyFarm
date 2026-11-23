@@ -9,11 +9,11 @@ use Illuminate\Validation\Rules\Password;
 class StoreUserRequest extends FormRequest
 {
     /**
-     * Only admins may create new accounts.
+     * Only admins and developers may create new accounts.
      */
     public function authorize(): bool
     {
-        return $this->user()?->hasRole(Role::Admin->value) ?? false;
+        return $this->user()?->hasAnyRole([Role::Admin->value, Role::Developer->value]) ?? false;
     }
 
     /**
@@ -25,7 +25,7 @@ class StoreUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
-            'role' => ['required', 'in:admin,operator,viewer'],
+            'role' => ['required', 'in:admin,operator,viewer,developer'],
         ];
     }
 }

@@ -69,6 +69,7 @@ async function request(method, url, options = {}) {
 export const http = {
   get: (url, options = {}) => request('GET', url, options),
   post: (url, body, options = {}) => request('POST', url, { ...options, body }),
+  put: (url, body, options = {}) => request('PUT', url, { ...options, body }),
   patch: (url, body, options = {}) => request('PATCH', url, { ...options, body }),
   delete: (url, options = {}) => request('DELETE', url, options),
 }

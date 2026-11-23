@@ -26,10 +26,11 @@ Route::prefix('auth')->name('api.auth.')->group(function (): void {
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('logout', [AuthController::class, 'logout'])->name('logout');
         Route::get('me', [AuthController::class, 'me'])->name('me');
+        Route::put('profile', [AuthController::class, 'updateProfile'])->name('profile.update');
     });
 });
 
-Route::prefix('users')->name('api.users.')->middleware(['auth:sanctum', 'role:admin'])->group(function (): void {
+Route::prefix('users')->name('api.users.')->middleware(['auth:sanctum', 'role:admin|developer'])->group(function (): void {
     Route::get('/', [UserController::class, 'index'])->name('index');
     Route::post('/', [UserController::class, 'store'])->name('store');
     Route::get('{user}', [UserController::class, 'show'])->name('show');

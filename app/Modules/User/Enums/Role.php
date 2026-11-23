@@ -7,6 +7,7 @@ enum Role: string
     case Admin = 'admin';
     case Operator = 'operator';
     case Viewer = 'viewer';
+    case Developer = 'developer';
 
     /**
      * Human readable label used by the UI.
@@ -17,6 +18,7 @@ enum Role: string
             self::Admin => 'Admin / Owner',
             self::Operator => 'Operator Kandang',
             self::Viewer => 'Viewer / Staff',
+            self::Developer => 'Superadmin / Developer',
         };
     }
 
